@@ -189,7 +189,6 @@ GLEngine::Model * GLEngineObjectInstanciater::GetModel(const string modelPath, c
 	{
 		// Load the mesh of the future Model.
 		GLEngine::Mesh* loadedMesh = _meshLoader->LoadModel(modelPath);
-		loadedMesh->InitializeVao();
 
 		// Load the textures of the future Model.
 		GLEngine::Texture2D* diffuseTexture = _textureManager->GetTexture(diffuseTexturePath);
