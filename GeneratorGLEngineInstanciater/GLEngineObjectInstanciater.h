@@ -7,6 +7,7 @@
 #include <Mesh\Mesh.h>
 #include <Render\Model.h>
 #include <Texture\TextureManager.h>
+#include <SceneGraph\CellArray.h>
 
 #include <unordered_map>
 
@@ -16,7 +17,7 @@ class GLEngineObjectInstanciater
 	: public Generator::Instanciater
 {
 public:
-	GLEngineObjectInstanciater(GLEngine::SceneManager* sceneManager, GLEngine::TextureManager* textureManager);
+	GLEngineObjectInstanciater(GLEngine::SceneManager* sceneManager, GLEngine::TextureManager* textureManager, float accelerationCellsSize);
 	~GLEngineObjectInstanciater();
 
 	// Add the objects to display to a pending buffer.
@@ -55,6 +56,9 @@ private:
 
 	// Scene manager.
 	GLEngine::SceneManager* _sceneManager;
+
+	// Acceleration structure.
+	GLEngine::CellArray* _mainCellArray;
 
 	// Texture manager.
 	GLEngine::TextureManager* _textureManager;
