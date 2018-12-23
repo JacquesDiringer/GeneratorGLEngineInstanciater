@@ -9,11 +9,15 @@
 
 #include <intrin.h>
 
-GLEngineObjectInstanciater::GLEngineObjectInstanciater(GLEngine::SceneManager* sceneManager, GLEngine::TextureManager* textureManager)
+GLEngineObjectInstanciater::GLEngineObjectInstanciater(GLEngine::SceneManager* sceneManager, GLEngine::TextureManager* textureManager, float accelerationCellsSize)
 	: _sceneManager(sceneManager), _textureManager(textureManager)
 {
 	_loadedModels = unordered_map<string, GLEngine::Model*>();
 	_meshLoader = new GLEngine::OBJLoader();
+
+	// Initialize the cell array frustum culling acceleration structure.
+	_mainCellArray = new GLEngine::CellArray(accelerationCellsSize);
+	_sceneManager->GetRootNode()->AddSubElement(_mainCellArray);
 }
 
 
@@ -119,7 +123,7 @@ bool GLEngineObjectInstanciater::RemoveDisplayable(shared_ptr<Generator::Display
 		}
 		else
 		{
-			std::cout << "The displayable to remove could not be found, modelName : " << std::endl;
+			std::cout << "The displayable to remove could not be found, and is not a SimpleObjectDisplayable." << std::endl;
 		}
 		return false;
 	}
@@ -140,7 +144,8 @@ bool GLEngineObjectInstanciater::AddSimpleObjectDisplayable(shared_ptr<Generator
 	GLEngine::Model* newModel = new GLEngine::Model(GetModel(modelPath, diffuseTexturePath));
 
 	// Now attach it to a scenenode, so that it becomes present in the scene.
-	GLEngine::SceneNode* lNode = _sceneManager->GetRootNode()->CreateChild();
+	//GLEngine::SceneNode* lNode = _sceneManager->GetRootNode()->CreateChild();
+	GLEngine::SceneNode* lNode = new GLEngine::SceneNode();
 
 	// Set the position of the new SceneNode.
 	GLEngineMath::Matrix4 modelWorldMatrix = GLEngineMath::Matrix4(*reinterpret_cast<GLEngineMath::Matrix4*>(&(newSimpleObjectDisplayable->GetWorldMatrix())));
@@ -151,13 +156,16 @@ bool GLEngineObjectInstanciater::AddSimpleObjectDisplayable(shared_ptr<Generator
 	// Link the Model to the SceneNode.
 	lNode->AddSubElement(newModel);
 
-	// Remember the associated ogre node, to be able to remove it later
+	// Remember the associated node, to be able to remove it later
 	_sceneDisplayablesNodes.insert(std::pair<shared_ptr<Generator::Displayable>, GLEngine::SceneNode*>(newSimpleObjectDisplayable, lNode));
 
 	if (_addCounter % 100 == 0)
 	{
 		std::cout << "Added " << _addCounter << " : " << newSimpleObjectDisplayable->GetModelName() << std::endl;
 	}
+
+	// Add the scene node to the acceleration structure when everything is set, because the acceleration structure is going to need these (position and bounding sphere) in order to assign in the to the right cells.
+	_mainCellArray->AddSceneNode(lNode);
 
 	return true;
 }
@@ -167,7 +175,8 @@ bool GLEngineObjectInstanciater::RemoveSimpleObjectDisplayable(unordered_map<sha
 	GLEngine::SceneNode* nodeToRemove = findIterator->second;
 
 	// TODO: make sure that the node AND the entity are deleted correctly
-	nodeToRemove->RemoveFromParentNode();
+	//nodeToRemove->RemoveFromParentNode();
+	_mainCellArray->DeleteSceneNode(nodeToRemove);
 
 	// Remove the element from the Displayable SceneNode map
 	_sceneDisplayablesNodes.erase(findIterator);
